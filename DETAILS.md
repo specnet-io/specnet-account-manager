@@ -104,6 +104,10 @@ Events are rendered from `internal/notify/templates/*.txt` (the first line is `S
 
 Server-rendered `html/template` pages and one stylesheet, with no JavaScript. That lets the CSP be `default-src 'none'`. Every POST needs a CSRF token: the session's token, or a per-browser cookie before sign-in. A POST with an `Origin` header from another site is rejected. Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` with the `__Host-` prefix when the base URL is https. `X-Forwarded-For` is honoured only from `SAM_TRUSTED_PROXIES`, and the client IP is used for rate limits (account requests, password resets, password changes) and the activity log. Request bodies are capped at 256 KiB. `/healthz` is liveness and `/readyz` also checks the database.
 
+## Theme
+
+The specnet phosphor-green terminal look, the same as the authentik login (its brand files) and the noggin theme: `static/logo.svg` in the header, `static/icon.svg` as favicon, `static/background.svg` (dark grid) behind every page, monospace system fonts (no web fonts, so the CSP stays `img-src 'self'`-only for local files), square corners, outlined `[ button ]`s, and `[ OK ]`/`[FAIL]` flashes. Dark only. Scanlines and the blinking footer cursor are CSS; the cursor stops with `prefers-reduced-motion`. To rebrand, replace the three SVGs and the colour variables at the top of `static/app.css`.
+
 ## Container
 
 Multi-stage build to a `scratch` image: the static binary, CA certificates and zoneinfo. It runs as uid 65532. `/data` must be writable by that uid, which a named volume is by default; for a bind mount, `chown 65532:65532` it. The healthcheck is `sam healthcheck`, since the image has no shell or curl.
