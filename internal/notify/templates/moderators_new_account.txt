@@ -1,0 +1,8 @@
+Subject: New account request: {{.Username}}
+
+{{.Name}} <{{.Email}}> asked for the account "{{.Username}}".
+
+Reason given:
+{{.Justification}}
+
+Review it here: {{.Link}}

@@ -1,0 +1,47 @@
+{{define "content"}}
+<section class="card">
+  <h1>Administration</h1>
+  <dl class="facts">
+    <dt>Public URL</dt><dd class="mono">{{.Data.BaseURL}}</dd>
+    <dt>OIDC redirect URI</dt><dd class="mono">{{.Data.Callback}}</dd>
+    <dt>Database</dt><dd>{{.Data.Database}}</dd>
+    <dt>Notification queue</dt><dd>{{range $k, $v := .Data.Outbox}}{{$k}}: {{$v}} &nbsp; {{else}}empty{{end}}{{with .Data.OutboxError}}<br><span class="muted small">Last error: {{.}}</span>{{end}}</dd>
+  </dl>
+  <p class="muted small">Values marked <span class="tag">env</span> come from <code>SAM_*</code> environment variables and can only be changed there. Secrets are stored encrypted and never shown.</p>
+  <nav class="subtabs">{{range .Data.Sections}}<a href="#{{.ID}}">{{.Name}}</a>{{end}}</nav>
+</section>
+{{range .Data.Sections}}
+<section class="card" id="{{.ID}}">
+  <h2>{{.Name}}</h2>
+  <form method="post" action="/admin/settings" class="stack">
+    {{template "csrf" $.CSRF}}
+    <input type="hidden" name="section" value="{{.Name}}">
+    {{range .Settings}}
+    <div class="setting">
+      {{if eq (print .Kind) "bool"}}
+        <label class="check"><input type="checkbox" name="{{.Key}}" value="true" {{if eq .Value "true"}}checked{{end}} {{if .Locked}}disabled{{end}}> {{.Label}} {{if .Locked}}<span class="tag" title="{{.EnvName}}">env</span>{{end}}</label>
+      {{else}}
+      <label>{{.Label}} {{if .Locked}}<span class="tag" title="{{.EnvName}}">env</span>{{end}}
+        {{if eq (print .Kind) "secret"}}
+          <input type="password" name="{{.Key}}" autocomplete="new-password" placeholder="{{if .IsSet}}•••••• set (leave blank to keep){{else}}not set{{end}}" {{if .Locked}}disabled{{end}}>
+        {{else if eq (print .Kind) "select"}}
+          <select name="{{.Key}}" {{if .Locked}}disabled{{end}}>{{$v := .Value}}{{range .Options}}<option {{if eq . $v}}selected{{end}}>{{.}}</option>{{end}}</select>
+        {{else if eq (print .Kind) "textarea"}}
+          <textarea name="{{.Key}}" rows="5" class="mono" {{if .Locked}}disabled{{end}}>{{.Value}}</textarea>
+        {{else}}
+          <input name="{{.Key}}" value="{{.Value}}" {{if eq (print .Kind) "int"}}inputmode="numeric"{{end}} {{if .Locked}}disabled{{end}}>
+        {{end}}
+      </label>
+      {{if and (eq (print .Kind) "secret") .IsSet (not .Locked)}}<label class="check small"><input type="checkbox" name="clear_{{.Key}}" value="1"> clear the stored value</label>{{end}}
+      {{end}}
+      {{with .Help}}<p class="muted small">{{.}}</p>{{end}}
+    </div>
+    {{end}}
+    <button class="primary">Save {{.Name}}</button>
+  </form>
+  {{if eq .ID "directory-ldap"}}<form method="post" action="/admin/test/ldap" class="row-form">{{template "csrf" $.CSRF}}<button>Test directory connection</button></form>{{end}}
+  {{if eq .ID "sign-in-oidc"}}<form method="post" action="/admin/test/oidc" class="row-form">{{template "csrf" $.CSRF}}<button>Test issuer discovery</button></form>{{end}}
+  {{if eq .ID "notifications"}}<form method="post" action="/admin/test/mail" class="row-form">{{template "csrf" $.CSRF}}<input type="email" name="to" placeholder="send a test message to" required><button>Send test</button></form>{{end}}
+</section>
+{{end}}
+{{end}}

@@ -1,0 +1,33 @@
+# Example: SAM behind a reverse proxy on the same host. Create the key first: docker run --rm ghcr.io/specnet-io/specnet-account-manager gen-key > sam_encryption_key
+services:
+  sam:
+    image: ghcr.io/specnet-io/specnet-account-manager:0.1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080" # the proxy terminates TLS and forwards here
+    environment:
+      SAM_BASE_URL: https://accounts.example.com
+      SAM_TRUSTED_PROXIES: 127.0.0.1,172.16.0.0/12
+      SAM_ENCRYPTION_KEY_FILE: /run/secrets/sam_encryption_key
+      # Optional: pin settings instead of using the admin page (see DETAILS.md §Settings)
+      # SAM_OIDC_ISSUER: https://sso.example.com/realms/main
+      # SAM_OIDC_CLIENT_ID: sam
+      # SAM_OIDC_CLIENT_SECRET_FILE: /run/secrets/oidc_client_secret
+      # SAM_LDAP_URL: ldaps://ipa.example.com
+      # SAM_LDAP_BASE_DN: dc=example,dc=com
+      # SAM_LDAP_BIND_DN: uid=svc-sam,cn=users,cn=accounts,dc=example,dc=com
+      # SAM_LDAP_BIND_PASSWORD_FILE: /run/secrets/ldap_bind_password
+      # SAM_MAILJET_API_KEY_FILE: /run/secrets/mailjet_api_key
+      # SAM_MAILJET_API_SECRET_FILE: /run/secrets/mailjet_api_secret
+      # SAM_MAIL_FROM_ADDRESS: accounts@example.com
+    secrets:
+      - sam_encryption_key
+    volumes:
+      - sam-data:/data
+
+secrets:
+  sam_encryption_key:
+    file: ./sam_encryption_key
+
+volumes:
+  sam-data:

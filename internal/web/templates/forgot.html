@@ -1,0 +1,14 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>Forgot your password?</h1>
+  {{if .Data.Sent}}
+  <p>If an account matches, we sent a reset link to its email address. The link works for one hour.</p>
+  {{else}}
+  <form method="post" action="/forgot-password" class="stack">
+    {{template "csrf" .CSRF}}
+    <label>Username or email <input name="who" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+    <button class="primary">Send reset link</button>
+  </form>
+  {{end}}
+</section>
+{{end}}

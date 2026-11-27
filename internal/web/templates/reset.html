@@ -1,0 +1,14 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>Choose a password</h1>
+  <p>For the account <strong>{{.Data.Username}}</strong>. Use at least {{.Data.MinLength}} characters.</p>
+  <form method="post" action="/reset-password" class="stack">
+    {{template "csrf" .CSRF}}
+    <input type="hidden" name="t" value="{{.Data.Token}}">
+    <input type="text" name="username" value="{{.Data.Username}}" autocomplete="username" hidden>
+    <label>New password <input type="password" name="password" required minlength="{{.Data.MinLength}}" autocomplete="new-password"></label>
+    <label>Repeat it <input type="password" name="confirm" required minlength="{{.Data.MinLength}}" autocomplete="new-password"></label>
+    <button class="primary">Set password</button>
+  </form>
+</section>
+{{end}}

@@ -1,0 +1,10 @@
+Subject: Confirm your account request for {{.Site}}
+
+Hello {{.Name}},
+
+Someone (hopefully you) asked for a {{.Site}} account with the username "{{.Username}}".
+Confirm this email address so a moderator can review the request:
+
+{{.Link}}
+
+The link works for {{.Hours}} hours. If you did not ask for an account, ignore this email.

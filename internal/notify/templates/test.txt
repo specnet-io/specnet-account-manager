@@ -1,0 +1,3 @@
+Subject: Test message from {{.Site}}
+
+This is a test message sent from the {{.Site}} administrator page. Delivery works.

@@ -1,0 +1,10 @@
+{{define "content"}}
+<section class="card">
+  <h1>Activity</h1>
+  <form method="get" action="/activity" class="row-form"><input name="q" value="{{.Data.Query}}" placeholder="filter by user, group or action"><button>Filter</button></form>
+  <div class="scroll"><table class="log"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Detail</th><th>IP</th></tr></thead><tbody>
+  {{range .Data.Entries}}<tr><td class="small">{{when .At}}</td><td>{{.Actor}}</td><td class="mono small">{{.Action}}</td><td>{{.Target}}</td><td class="small">{{.Detail}}</td><td class="small muted">{{.IP}}</td></tr>
+  {{else}}<tr><td class="muted">Nothing yet.</td></tr>{{end}}
+  </tbody></table></div>
+</section>
+{{end}}

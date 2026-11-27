@@ -1,0 +1,9 @@
+Subject: Confirm your new email address for {{.Site}}
+
+Hello {{.Name}},
+
+Confirm {{.NewEmail}} as the email address for "{{.Username}}":
+
+{{.Link}}
+
+The link works for {{.Hours}} hours. If you did not ask for this, ignore this email.

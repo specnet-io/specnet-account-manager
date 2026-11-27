@@ -1,0 +1,17 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>Request an account</h1>
+  <p class="muted">We will email you a link to confirm your address. A moderator then reviews the request.</p>
+  <form method="post" action="/request-account" class="stack">
+    {{template "csrf" .CSRF}}
+    <label>Username <input name="username" value="{{.Form.Get "username"}}" required autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="64"></label>
+    <div class="row">
+      <label>First name <input name="given_name" value="{{.Form.Get "given_name"}}" required autocomplete="given-name" maxlength="64"></label>
+      <label>Last name <input name="surname" value="{{.Form.Get "surname"}}" required autocomplete="family-name" maxlength="64"></label>
+    </div>
+    <label>Email <input type="email" name="email" value="{{.Form.Get "email"}}" required autocomplete="email" maxlength="254"></label>
+    <label>Why do you need an account? <textarea name="justification" rows="4" required maxlength="2000">{{.Form.Get "justification"}}</textarea></label>
+    <button class="primary">Send request</button>
+  </form>
+</section>
+{{end}}

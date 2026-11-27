@@ -1,0 +1,13 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>Request a new group</h1>
+  <p class="muted">Moderators review new groups. Once created, you own it and can manage its members.</p>
+  <form method="post" action="/groups/new" class="stack">
+    {{template "csrf" .CSRF}}
+    <label>Group name <input name="name" value="{{.Form.Get "name"}}" required autocapitalize="none" spellcheck="false" maxlength="64"></label>
+    <label>Description <input name="description" value="{{.Form.Get "description"}}" required maxlength="256"></label>
+    <label>Why is it needed? <textarea name="justification" rows="4" required maxlength="2000">{{.Form.Get "justification"}}</textarea></label>
+    <button class="primary">Send request</button>
+  </form>
+</section>
+{{end}}

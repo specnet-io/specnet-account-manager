@@ -1,0 +1,25 @@
+{{define "content"}}
+<section class="card">
+  <h1>SSH keys</h1>
+  {{if .Data.Keys}}
+  <div class="scroll"><table>
+    <thead><tr><th>Type</th><th>Fingerprint</th><th>Comment</th><th></th></tr></thead>
+    <tbody>
+    {{range .Data.Keys}}
+      <tr><td>{{.Type}}{{if .Bits}} ({{.Bits}}){{end}}</td><td class="mono small">{{.Fingerprint}}</td><td>{{.Comment}}</td>
+      <td class="right"><form method="post" action="/keys/delete">{{template "csrf" $.CSRF}}<input type="hidden" name="fingerprint" value="{{.Fingerprint}}"><button class="danger small">Remove</button></form></td></tr>
+    {{end}}
+    </tbody>
+  </table></div>
+  {{else}}<p class="muted">No keys yet.</p>{{end}}
+</section>
+<section class="card">
+  <h2>Add a key</h2>
+  <form method="post" action="/keys" class="stack">
+    {{template "csrf" .CSRF}}
+    <label>Public key <textarea name="key" rows="4" class="mono" required placeholder="ssh-ed25519 AAAA... you@laptop"></textarea></label>
+    <p class="muted small">Paste the contents of your <code>.pub</code> file. Allowed: {{join .Data.Types ", "}}. RSA keys need at least {{.Data.RSAMin}} bits. Up to {{.Data.Max}} keys.</p>
+    <button class="primary">Add key</button>
+  </form>
+</section>
+{{end}}

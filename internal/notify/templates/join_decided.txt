@@ -1,0 +1,5 @@
+Subject: Your request to join {{.Group}}
+
+Hello {{.Name}},
+
+Your request to join "{{.Group}}" was {{if .Approved}}approved. You are now a member{{else}}not approved{{end}}.

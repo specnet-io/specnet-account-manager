@@ -1,0 +1,8 @@
+Subject: {{.Requester}} wants to join {{.Group}}
+
+{{.Requester}} asked to join the group "{{.Group}}", which you own.{{if .Note}}
+
+Their note:
+{{.Note}}{{end}}
+
+Approve or deny it here: {{.Link}}

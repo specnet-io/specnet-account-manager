@@ -1,0 +1,22 @@
+{{define "content"}}
+{{$u := .Data.User}}
+{{template "modtabs" "users"}}
+<section class="card">
+  <div class="profile-head">
+    {{with avatar $u.Email 192}}<img class="avatar lg" src="{{.}}" alt="" width="96" height="96">{{end}}
+    <div><h1>{{$u.Name}}</h1><p class="muted">{{$u.Username}} · {{or $u.Email "no email"}}{{if $u.Disabled}} · <span class="tag denied">disabled</span>{{end}}</p></div>
+  </div>
+  <dl class="facts">
+    <dt>Phone</dt><dd>{{$u.Phone}}</dd><dt>Mobile</dt><dd>{{$u.Mobile}}</dd><dt>Title</dt><dd>{{$u.Title}}</dd>
+    <dt>Groups</dt><dd>{{join .Data.Groups ", "}}</dd>
+    <dt>Owns</dt><dd>{{join .Data.Owned ", "}}</dd>
+    <dt>SSH keys</dt><dd>{{range .Data.Keys}}<div class="mono small">{{.Type}} {{.Fingerprint}} {{.Comment}}</div>{{else}}none{{end}}</dd>
+  </dl>
+</section>
+<section class="card mod">
+  <h2>Force a password reset</h2>
+  <p class="muted">The current password stops working immediately, the user is signed out here, and they are emailed a link to choose a new one.</p>
+  <form method="post" action="/mod/users/{{$u.Username}}/force-reset" class="row-form">{{template "csrf" .CSRF}}
+    <input name="note" placeholder="Note to the user (optional)" maxlength="1000"><button class="danger">Reset password</button></form>
+</section>
+{{end}}

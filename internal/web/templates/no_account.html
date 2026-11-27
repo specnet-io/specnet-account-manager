@@ -1,0 +1,7 @@
+{{define "content"}}
+<section class="card narrow">
+  <h1>No account found</h1>
+  <p>You signed in as <strong>{{.Data.Claim}}</strong>, but there is no matching account in the directory.</p>
+  {{if .Requests}}<p><a class="button" href="/request-account">Request an account</a></p>{{end}}
+</section>
+{{end}}

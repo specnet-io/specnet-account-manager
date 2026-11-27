@@ -1,0 +1,5 @@
+Subject: Your {{.Site}} email address was changed
+
+Hello {{.Name}},
+
+The email address for "{{.Username}}" was changed to {{.NewEmail}}. If this was not you, contact {{if .Support}}{{.Support}}{{else}}a moderator{{end}} right away.

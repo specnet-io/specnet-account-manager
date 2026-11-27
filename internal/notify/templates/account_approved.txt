@@ -1,0 +1,11 @@
+Subject: Your {{.Site}} account is ready
+
+Hello {{.Name}},
+
+Your account request was approved. Your username is: {{.Username}}
+
+Choose your password here (the link works for {{.Hours}} hours):
+
+{{.Link}}
+
+After that you can sign in at {{.BaseURL}}

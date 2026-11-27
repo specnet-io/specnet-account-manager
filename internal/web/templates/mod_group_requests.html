@@ -1,0 +1,23 @@
+{{define "content"}}
+{{template "modtabs" "greq"}}
+<section class="card">
+  <h1>Pending group requests</h1>
+  {{range .Data.Pending}}
+  <div class="request">
+    <div><strong>{{.Name}}</strong> · requested by {{.Requester}} <span class="muted small">{{when .CreatedAt}}</span></div>
+    <p>{{.Description}}</p>
+    <blockquote>{{.Justification}}</blockquote>
+    <form method="post" action="/mod/group-requests/{{.ID}}" class="row-form">{{template "csrf" $.CSRF}}
+      <input name="note" placeholder="Note to the requester (optional)" maxlength="1000">
+      <button name="decision" value="approve" class="primary">Create group</button>
+      <button name="decision" value="deny" class="danger">Deny</button></form>
+  </div>
+  {{else}}<p class="muted">Nothing waiting.</p>{{end}}
+</section>
+<section class="card">
+  <h2>Recent</h2>
+  <div class="scroll"><table><thead><tr><th>Group</th><th>Requester</th><th>Status</th><th>By</th><th>Updated</th></tr></thead><tbody>
+  {{range .Data.Recent}}<tr><td>{{.Name}}</td><td>{{.Requester}}</td><td><span class="tag {{.Status}}">{{.Status}}</span></td><td>{{.DecidedBy}}</td><td class="small">{{when .UpdatedAt}}</td></tr>{{end}}
+  </tbody></table></div>
+</section>
+{{end}}
