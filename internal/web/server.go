@@ -144,6 +144,8 @@ func (s *Server) Handler() http.Handler {
 
 	// signed-in users
 	user := func(h http.HandlerFunc) http.Handler { return s.require(roleUser, h) }
+	mux.Handle("GET /home", user(s.userHome))
+	mux.Handle("GET /certs/{file}", user(s.certDownload))
 	mux.Handle("GET /profile", user(s.profile))
 	mux.Handle("POST /profile", user(s.updateProfile))
 	mux.Handle("GET /password", user(s.passwordForm))

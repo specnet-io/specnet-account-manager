@@ -544,6 +544,41 @@ func hasValueFold(vals []string, v string) bool {
 	return false
 }
 
+// ---- CA certificates ----
+
+// CACertificates reads FreeIPA's CA store, cn=certificates,cn=ipa,cn=etc,<base>: one entry per CA the domain trusts
+// (the IPA CA, an external root and any intermediates), each with cACertificate;binary. Distrusted ones are skipped.
+func (l *LDAP) CACertificates(ctx context.Context) ([][]byte, error) {
+	if !l.ipa() {
+		return nil, nil
+	}
+	conn, err := l.service(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	res, err := conn.Search(ldap.NewSearchRequest("cn=certificates,cn=ipa,cn=etc,"+l.cfg.BaseDN, ldap.ScopeSingleLevel, ldap.NeverDerefAliases, 100, 0, false,
+		"(objectClass=ipaCertificate)", []string{"cACertificate;binary", "ipaKeyTrust"}, nil))
+	if err != nil {
+		if ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var out [][]byte
+	for _, e := range res.Entries {
+		if strings.EqualFold(e.GetAttributeValue("ipaKeyTrust"), "distrusted") {
+			continue
+		}
+		for _, a := range e.Attributes {
+			if strings.HasPrefix(strings.ToLower(a.Name), "cacertificate") {
+				out = append(out, a.ByteValues...)
+			}
+		}
+	}
+	return out, nil
+}
+
 // ---- groups ----
 
 func (l *LDAP) toGroup(e *ldap.Entry) *Group {

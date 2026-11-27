@@ -140,7 +140,7 @@ label .tag { align-self: flex-start; }
 .chips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .4rem; }
 .chips li { border: 1px solid var(--line); padding: .1rem .6rem; }
 .chips li::before { content: "#"; color: var(--muted); margin-right: .15em; }
-.avatar { background: var(--line); object-fit: cover; outline: 1px solid var(--green); filter: grayscale(1) sepia(1) hue-rotate(60deg) saturate(3) brightness(.9); }
+.avatar { background: var(--line); object-fit: cover; outline: 1px solid var(--green); }
 .avatar.sm { width: 32px; height: 32px; }
 .avatar.lg { width: 96px; height: 96px; }
 td .avatar.sm { width: 24px; height: 24px; }
@@ -156,6 +156,8 @@ blockquote { margin: .5rem 0; padding: .5rem .75rem; border-left: 3px solid var(
 .facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; color: var(--bright); }
 @media (max-width: 600px) { .facts { grid-template-columns: 1fr; } .facts dd { margin-bottom: .5rem; } }
 .setting p { margin: .25rem 0 0; }
+.motd { border-left: 4px solid var(--green); }
+.motd-text { white-space: pre-wrap; color: var(--bright); margin: 0; overflow-wrap: anywhere; }
 
 @keyframes blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { footer::after { animation: none; } }

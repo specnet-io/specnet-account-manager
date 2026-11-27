@@ -137,4 +137,8 @@ type Directory interface {
 	AddMember(ctx context.Context, group, username string) error
 	RemoveMember(ctx context.Context, group, username string) error
 	UserGroups(ctx context.Context, username string) ([]string, error)
+
+	// CACertificates returns the directory's trusted CA certificates (DER), root and intermediates; nil when the
+	// profile has no such store (OpenLDAP). See DETAILS.md §Home page.
+	CACertificates(ctx context.Context) ([][]byte, error)
 }
