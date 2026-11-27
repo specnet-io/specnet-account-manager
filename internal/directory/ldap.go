@@ -37,6 +37,9 @@ type Config struct {
 	HomePrefix         string
 	Shell              string
 	Timeout            time.Duration
+	// FASGroups (FreeIPA): group search finds only FAS groups (objectClass fasGroup), and new groups are created as FAS
+	// groups. SAM's web layer refuses to manage the others. See DETAILS.md §Directory.
+	FASGroups bool
 }
 
 // LDAP implements Directory over LDAP/LDAPS.
@@ -110,6 +113,12 @@ func realmFromBase(base string) string {
 }
 
 func (l *LDAP) ipa() bool { return l.cfg.Profile == "freeipa" }
+
+// fas reports whether only FreeIPA FAS groups are in scope.
+func (l *LDAP) fas() bool { return l.ipa() && l.cfg.FASGroups }
+
+// groupAttrs are read for every group.
+var groupAttrs = []string{"cn", "description", "member", "objectClass"}
 
 func (l *LDAP) tlsConfig() (*tls.Config, error) {
 	u, err := url.Parse(l.cfg.URL)
@@ -538,7 +547,8 @@ func hasValueFold(vals []string, v string) bool {
 // ---- groups ----
 
 func (l *LDAP) toGroup(e *ldap.Entry) *Group {
-	g := &Group{DN: e.DN, Name: e.GetAttributeValue("cn"), Description: e.GetAttributeValue("description")}
+	g := &Group{DN: e.DN, Name: e.GetAttributeValue("cn"), Description: e.GetAttributeValue("description"),
+		FAS: hasValueFold(e.GetAttributeValues("objectClass"), "fasGroup")}
 	for _, m := range e.GetAttributeValues("member") {
 		if u := uidFromDN(m); u != "" {
 			g.Members = append(g.Members, u)
@@ -563,7 +573,7 @@ func uidFromDN(dn string) string {
 
 func (l *LDAP) findGroup(conn *ldap.Conn, name string) (*Group, error) {
 	res, err := conn.Search(ldap.NewSearchRequest(l.cfg.GroupBase, ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 2, 0, false,
-		"(&(objectClass=groupOfNames)(cn="+ldap.EscapeFilter(name)+"))", []string{"cn", "description", "member"}, nil))
+		"(&(objectClass=groupOfNames)(cn="+ldap.EscapeFilter(name)+"))", groupAttrs, nil))
 	if err != nil {
 		if ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject) {
 			return nil, ErrNotFound
@@ -594,10 +604,13 @@ func (l *LDAP) SearchGroups(ctx context.Context, query string, limit int) ([]*Gr
 	}
 	defer conn.Close()
 	filter := "(objectClass=groupOfNames)"
-	if q := strings.TrimSpace(query); q != "" {
-		filter = "(&(objectClass=groupOfNames)(cn=*" + ldap.EscapeFilter(q) + "*))"
+	if l.fas() {
+		filter += "(objectClass=fasGroup)"
 	}
-	res, err := conn.Search(ldap.NewSearchRequest(l.cfg.GroupBase, ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, limit, 0, false, filter, []string{"cn", "description"}, nil))
+	if q := strings.TrimSpace(query); q != "" {
+		filter += "(cn=*" + ldap.EscapeFilter(q) + "*)"
+	}
+	res, err := conn.Search(ldap.NewSearchRequest(l.cfg.GroupBase, ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, limit, 0, false, "(&"+filter+")", []string{"cn", "description", "objectClass"}, nil))
 	if err != nil && !ldap.IsErrorWithCode(err, ldap.LDAPResultSizeLimitExceeded) {
 		return nil, err
 	}
@@ -632,7 +645,11 @@ func (l *LDAP) CreateGroup(ctx context.Context, name, description, firstMember s
 	}
 	req.Attribute("member", []string{owner.DN})
 	if l.ipa() {
-		req.Attribute("objectClass", []string{"top", "groupofnames", "nestedgroup", "ipausergroup", "ipaobject", "posixgroup"})
+		oc := []string{"top", "groupofnames", "nestedgroup", "ipausergroup", "ipaobject", "posixgroup"}
+		if l.fas() {
+			oc = append(oc, "fasgroup")
+		}
+		req.Attribute("objectClass", oc)
 		req.Attribute("gidNumber", []string{"-1"})
 		req.Attribute("ipaUniqueID", []string{"autogenerate"})
 	} else {

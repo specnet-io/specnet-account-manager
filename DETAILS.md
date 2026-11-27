@@ -32,10 +32,10 @@ SAM's own tables hold only what the directory can't: requests, sessions, tokens,
 
 Effective value, in order of precedence: `SAM_<NAME>` env (locked in the UI) > value saved on the admin page > built-in default. Every change bumps a version number so cached clients (the LDAP config and the OIDC provider) are rebuilt. All settings:
 
-General: `site_name`, `support_email`, `account_requests_enabled`, `username_pattern`, `group_name_pattern`, `password_min_length`, `session_hours`, `protected_groups`, `audit_retention_days`.
+General: `site_name`, `support_email`, `account_requests_enabled`, `username_pattern`, `group_name_pattern`, `password_min_length`, `session_hours`, `audit_retention_days`.
 Roles: `moderator_group`, `admin_group`.
 OIDC: `oidc_issuer`, `oidc_client_id`, `oidc_client_secret`, `oidc_scopes`, `oidc_username_claim`, `oidc_match_attribute` (`username`|`email`), `oidc_strip_domain`.
-LDAP: `ldap_profile` (`freeipa`|`openldap`), `ldap_url`, `ldap_starttls`, `ldap_ca_cert`, `ldap_insecure_skip_verify`, `ldap_bind_dn`, `ldap_bind_password`, `ldap_base_dn`, `ldap_user_base`, `ldap_group_base`, `ldap_kerberos_realm`, `ldap_ssh_key_attribute`, `ldap_id_min`, `ldap_home_prefix`, `ldap_login_shell`, `ldap_timeout_seconds`.
+LDAP: `ldap_profile` (`freeipa`|`openldap`), `ldap_url`, `ldap_starttls`, `ldap_ca_cert`, `ldap_insecure_skip_verify`, `ldap_bind_dn`, `ldap_bind_password`, `ldap_base_dn`, `ldap_user_base`, `ldap_group_base`, `ldap_fas_groups`, `ldap_kerberos_realm`, `ldap_ssh_key_attribute`, `ldap_id_min`, `ldap_home_prefix`, `ldap_login_shell`, `ldap_timeout_seconds`.
 Notifications: `notify_provider` (`mailjet`|`smtp`|`log`|`none`), `mail_from_address`, `mail_from_name`, `mailjet_api_key`, `mailjet_api_secret`, `mailjet_api_url`, `smtp_host`, `smtp_port`, `smtp_security` (`starttls`|`tls`|`none`), `smtp_username`, `smtp_password`.
 Profile: `editable_fields`, `ssh_key_types`, `ssh_rsa_min_bits`, `ssh_max_keys`, `gravatar_enabled`, `gravatar_default`.
 
@@ -46,7 +46,8 @@ One interface (`directory.Directory`) and one LDAP implementation with two schem
 - Users: `posixAccount` entries under the user base, looked up by `uid` (or `mail`).
 - Groups: `groupOfNames` with DN-valued `member`. Only direct members are shown and changed. Nested groups are left alone.
 - Roles: a user is a moderator or admin if they are a **direct** member of the configured group. Roles are re-read from LDAP every 5 minutes during a session, and a user who is removed or disabled in LDAP is signed out at that point.
-- **Managed groups**: SAM only touches groups registered in its `managed_groups` table, either created through an approved request or adopted by a moderator. Owners are stored in SAM, not in LDAP, so ownership works the same on any directory. The moderator group, the admin group and `protected_groups` can never be managed, which keeps role assignment out of reach of moderators and group owners.
+- **Managed groups**: SAM only touches groups registered in its `managed_groups` table, either created through an approved request or adopted by a moderator. Owners are stored in SAM, not in LDAP, so ownership works the same on any directory. The moderator group and the admin group can never be managed, which keeps role assignment out of reach of moderators and group owners.
+- **FAS groups only** (`ldap_fas_groups`, FreeIPA with the freeipa-fas plugin): SAM manages only groups with the `fasGroup` object class. Moderators' group search lists only FAS groups, adopting a non-FAS group is refused, and groups created from requests get `fasGroup`. The directory decides on every request: if `fasGroup` is removed from a managed group, it disappears from SAM's lists and its pages return 404, but stays registered, so adding `fasGroup` back restores it with its owners. This replaced the `protected_groups` list (removed): to keep SAM away from a group, leave it, or make it, a non-FAS group. freeipa-fas's `--fasgroup` flag only adds the class; to remove it, clear any `fas*` attributes and then run `ipa group-mod <group> --delattr=objectclass=fasgroup`. Ignored on the OpenLDAP profile.
 - OpenLDAP profile: new users get `inetOrgPerson`+`posixAccount`, with `uidNumber` = `gidNumber` = highest number in use ≥ `ldap_id_min`, plus one. No per-user group is created. New groups are plain `groupOfNames`, so they need at least one member; the requester is the first one. SSH keys use `sshPublicKey` from the openssh-lpk schema, and SAM adds `ldapPublicKey` to the user when needed.
 
 ## FreeIPA

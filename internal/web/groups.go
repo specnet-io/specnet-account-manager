@@ -52,10 +52,23 @@ func (s *Server) groups(w http.ResponseWriter, r *http.Request) {
 			pending[j.GroupName] = true
 		}
 	}
+	// With ldap_fas_groups, a managed group whose FAS object class was removed drops out of the list.
+	var fas map[string]bool
+	if s.fasOnly() {
+		found, err := dir.SearchGroups(ctx, "", 10000)
+		if err != nil {
+			s.fail(w, r, http.StatusBadGateway, "Groups could not be loaded from the directory.")
+			return
+		}
+		fas = map[string]bool{}
+		for _, g := range found {
+			fas[strings.ToLower(g.Name)] = true
+		}
+	}
 	isManaged := map[string]bool{}
 	var browse []groupRow
 	for _, g := range managed {
-		if s.protected(g.Name) {
+		if s.reserved(g.Name) || (fas != nil && !fas[strings.ToLower(g.Name)]) {
 			continue
 		}
 		isManaged[strings.ToLower(g.Name)] = true
@@ -103,7 +116,7 @@ func (s *Server) loadManaged(w http.ResponseWriter, r *http.Request) (*managedCt
 		return nil, false
 	}
 	mg, err := s.store.GetManagedGroup(r.Context(), name)
-	if err != nil || s.protected(name) {
+	if err != nil || s.reserved(name) {
 		s.fail(w, r, http.StatusNotFound, "That group is not managed here.")
 		return nil, false
 	}
@@ -116,6 +129,10 @@ func (s *Server) loadManaged(w http.ResponseWriter, r *http.Request) (*managedCt
 	}
 	if err != nil {
 		m.group = nil
+	}
+	if m.group != nil && !s.manageable(m.group) {
+		s.fail(w, r, http.StatusNotFound, "That group is not managed here.")
+		return nil, false
 	}
 	return m, true
 }
@@ -417,7 +434,7 @@ func (s *Server) groupRequest(w http.ResponseWriter, r *http.Request) {
 		again("That group name is not allowed: use lower-case letters, digits, dots, dashes or underscores, starting with a letter.")
 		return
 	}
-	if s.protected(req.Name) {
+	if s.reserved(req.Name) {
 		again("That name is reserved.")
 		return
 	}

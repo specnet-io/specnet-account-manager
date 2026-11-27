@@ -105,6 +105,7 @@ type Group struct {
 	Name        string
 	Description string
 	Members     []string
+	FAS         bool // FreeIPA: has the fasGroup object class (freeipa-fas)
 }
 
 // NewUser is what a moderator approves into the directory.

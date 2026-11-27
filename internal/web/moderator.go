@@ -121,7 +121,7 @@ func (s *Server) decideGroupRequest(w http.ResponseWriter, r *http.Request) {
 		s.back(w, r, "/mod/group-requests", "The requester's account no longer exists; deny the request instead.", true)
 		return
 	}
-	if s.protected(req.Name) {
+	if s.reserved(req.Name) {
 		s.back(w, r, "/mod/group-requests", "That group name is reserved.", true)
 		return
 	}
@@ -166,7 +166,7 @@ func (s *Server) modGroups(w http.ResponseWriter, r *http.Request) {
 			}
 			var rows []groupRow
 			for _, g := range found {
-				rows = append(rows, groupRow{Name: g.Name, Description: g.Description, Managed: isManaged[strings.ToLower(g.Name)] || s.protected(g.Name)})
+				rows = append(rows, groupRow{Name: g.Name, Description: g.Description, Managed: isManaged[strings.ToLower(g.Name)] || !s.manageable(g)})
 			}
 			p.Data["Found"] = rows
 		}
@@ -177,10 +177,6 @@ func (s *Server) modGroups(w http.ResponseWriter, r *http.Request) {
 func (s *Server) adoptGroup(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.PostFormValue("name"))
 	owner := strings.ToLower(strings.TrimSpace(r.PostFormValue("owner")))
-	if s.protected(name) {
-		s.back(w, r, "/mod/groups", name+" is protected and cannot be managed here.", true)
-		return
-	}
 	dir, err := s.Dir()
 	if err != nil {
 		s.back(w, r, "/mod/groups", "The directory is not configured.", true)
@@ -189,6 +185,10 @@ func (s *Server) adoptGroup(w http.ResponseWriter, r *http.Request) {
 	g, err := dir.GetGroup(r.Context(), name)
 	if err != nil {
 		s.back(w, r, "/mod/groups", "No directory group named "+name+".", true)
+		return
+	}
+	if !s.manageable(g) {
+		s.back(w, r, "/mod/groups", s.notManageableMsg(g), true)
 		return
 	}
 	if owner != "" {
