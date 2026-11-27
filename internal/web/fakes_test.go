@@ -29,6 +29,7 @@ type fakeDir struct {
 	passwords map[string]string
 	expired   map[string]bool
 	groups    map[string]*directory.Group
+	fasOnly   bool // mimics directory.Config.FASGroups: search finds FAS groups only, new groups are FAS
 }
 
 func newFakeDir() *fakeDir {
@@ -136,6 +137,12 @@ func (f *fakeDir) SetSSHKeys(_ context.Context, n string, keys []string) error {
 	f.users[n].SSHKeys = append([]string(nil), keys...)
 	return nil
 }
+func (f *fakeDir) setFAS(group string, fas bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.groups[group].FAS = fas
+}
+
 func (f *fakeDir) GetGroup(_ context.Context, n string) (*directory.Group, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -152,7 +159,7 @@ func (f *fakeDir) SearchGroups(_ context.Context, q string, _ int) ([]*directory
 	defer f.mu.Unlock()
 	var out []*directory.Group
 	for _, g := range f.groups {
-		if strings.Contains(g.Name, q) {
+		if strings.Contains(g.Name, q) && (!f.fasOnly || g.FAS) {
 			c := *g
 			out = append(out, &c)
 		}
@@ -165,7 +172,7 @@ func (f *fakeDir) CreateGroup(_ context.Context, n, d, first string) error {
 	if _, ok := f.groups[n]; ok {
 		return directory.ErrExists
 	}
-	f.groups[n] = &directory.Group{DN: "cn=" + n, Name: n, Description: d, Members: []string{first}}
+	f.groups[n] = &directory.Group{DN: "cn=" + n, Name: n, Description: d, Members: []string{first}, FAS: f.fasOnly}
 	return nil
 }
 func (f *fakeDir) DeleteGroup(_ context.Context, n string) error {

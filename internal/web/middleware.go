@@ -430,18 +430,29 @@ func (s *Server) moderatorEmails(ctx context.Context, dir directory.Directory) [
 	return s.emailsOf(ctx, dir, g.Members)
 }
 
-// protected reports whether SAM must never manage the group.
-func (s *Server) protected(name string) bool {
+// reserved reports whether the name is one of SAM's own role groups. Owners of those could grant themselves
+// moderator or admin rights, so SAM never manages them, whatever else is configured.
+func (s *Server) reserved(name string) bool {
 	n := strings.ToLower(name)
-	if n == strings.ToLower(s.settings.Get("moderator_group")) || n == strings.ToLower(s.settings.Get("admin_group")) {
-		return true
+	return n == strings.ToLower(s.settings.Get("moderator_group")) || n == strings.ToLower(s.settings.Get("admin_group"))
+}
+
+// fasOnly reports whether SAM manages only FreeIPA FAS groups (ldap_fas_groups). See DETAILS.md §Directory.
+func (s *Server) fasOnly() bool {
+	return s.settings.Bool("ldap_fas_groups") && s.settings.Get("ldap_profile") == "freeipa"
+}
+
+// manageable reports whether SAM may manage this directory group: not reserved, and a FAS group when fasOnly.
+func (s *Server) manageable(g *directory.Group) bool {
+	return !s.reserved(g.Name) && (!s.fasOnly() || g.FAS)
+}
+
+// notManageableMsg explains why manageable refused g.
+func (s *Server) notManageableMsg(g *directory.Group) string {
+	if s.reserved(g.Name) {
+		return g.Name + " is one of SAM's role groups and cannot be managed here."
 	}
-	for _, p := range s.settings.List("protected_groups") {
-		if n == strings.ToLower(p) {
-			return true
-		}
-	}
-	return false
+	return g.Name + " is not a FAS group, so SAM does not manage it."
 }
 
 func sortedKeys(m map[string]bool) []string {

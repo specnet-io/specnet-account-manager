@@ -59,7 +59,6 @@ var Defs = []Def{
 	{Key: "group_name_pattern", Section: "General", Label: "Group name pattern", Kind: Text, Default: `^[a-z][a-z0-9._-]{1,63}$`},
 	{Key: "password_min_length", Section: "General", Label: "Minimum password length", Help: "The directory's own policy still applies.", Kind: Int, Default: "12", Min: 8},
 	{Key: "session_hours", Section: "General", Label: "Session lifetime (hours)", Kind: Int, Default: "12", Min: 1},
-	{Key: "protected_groups", Section: "General", Label: "Protected groups", Help: "Groups SAM will never manage, in addition to the moderator and admin groups.", Kind: List, Default: "admins,editors,ipausers,trust admins,default smb group"},
 	{Key: "audit_retention_days", Section: "General", Label: "Keep activity log (days)", Help: "0 keeps it forever.", Kind: Int, Default: "365"},
 
 	{Key: "moderator_group", Section: "Roles", Label: "Moderator group", Help: "Directory group whose members approve accounts and manage groups.", Kind: Text, Default: "sam-moderators"},
@@ -83,6 +82,7 @@ var Defs = []Def{
 	{Key: "ldap_base_dn", Section: "Directory (LDAP)", Label: "Base DN", Help: "e.g. dc=example,dc=com", Kind: Text},
 	{Key: "ldap_user_base", Section: "Directory (LDAP)", Label: "User base", Help: "Empty: cn=users,cn=accounts,<base> (FreeIPA) or ou=people,<base>.", Kind: Text},
 	{Key: "ldap_group_base", Section: "Directory (LDAP)", Label: "Group base", Help: "Empty: cn=groups,cn=accounts,<base> (FreeIPA) or ou=groups,<base>.", Kind: Text},
+	{Key: "ldap_fas_groups", Section: "Directory (LDAP)", Label: "Only FAS groups (FreeIPA)", Help: "Manage only groups with the fasGroup object class (freeipa-fas); new groups get it. Remove it from a group to take that group out of SAM.", Kind: Bool, Default: "false"},
 	{Key: "ldap_kerberos_realm", Section: "Directory (LDAP)", Label: "Kerberos realm (FreeIPA)", Help: "Empty: derived from the base DN.", Kind: Text},
 	{Key: "ldap_ssh_key_attribute", Section: "Directory (LDAP)", Label: "SSH key attribute", Help: "Empty: ipaSshPubKey (FreeIPA) or sshPublicKey (openssh-lpk).", Kind: Text},
 	{Key: "ldap_id_min", Section: "Directory (LDAP)", Label: "First uid/gid number (OpenLDAP)", Help: "FreeIPA allocates its own.", Kind: Int, Default: "10000", Min: 1000},

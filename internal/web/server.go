@@ -103,6 +103,7 @@ func (s *Server) Dir() (directory.Directory, error) {
 			HomePrefix:         s.settings.Get("ldap_home_prefix"),
 			Shell:              s.settings.Get("ldap_login_shell"),
 			Timeout:            time.Duration(s.settings.Int("ldap_timeout_seconds")) * time.Second,
+			FASGroups:          s.fasOnly(),
 		})
 		s.dir, s.dirErr = nil, err
 		if err == nil {

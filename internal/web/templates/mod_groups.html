@@ -13,7 +13,7 @@
   {{if .Data.Query}}
   <table><tbody>
   {{range .Data.Found}}<tr><td><strong>{{.Name}}</strong><br><span class="muted small">{{.Description}}</span></td><td class="right">
-    {{if .Managed}}<span class="muted small">managed or protected</span>{{else}}
+    {{if .Managed}}<span class="muted small">managed or not manageable</span>{{else}}
     <form method="post" action="/mod/groups/adopt" class="row-form">{{template "csrf" $.CSRF}}<input type="hidden" name="name" value="{{.Name}}"><input name="owner" placeholder="owner username (optional)" autocapitalize="none"><button>Manage</button></form>{{end}}
   </td></tr>
   {{else}}<tr><td class="muted">No matches.</td></tr>{{end}}

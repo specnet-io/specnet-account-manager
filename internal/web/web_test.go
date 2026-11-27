@@ -354,7 +354,7 @@ func TestGroupsLifecycle(t *testing.T) {
 	alice.get("/groups/new")
 	st, body := alice.post("/groups/new", url.Values{"name": {"Team-Red"}, "description": {"red team"}, "justification": {"we need it"}})
 	must(t, st, body, 200, "sent to the moderators")
-	st, body = alice.post("/groups/new", url.Values{"name": {"admins"}, "description": {"x"}, "justification": {"x"}})
+	st, body = alice.post("/groups/new", url.Values{"name": {"sam-admins"}, "description": {"x"}, "justification": {"x"}})
 	must(t, st, body, 422, "reserved")
 	h.notifier.Flush(ctx)
 	if h.mail.find("moderators_new_group", "mod@example.test") == nil {
@@ -425,20 +425,85 @@ func TestGroupsLifecycle(t *testing.T) {
 	st, body = bob.post("/groups/team-red/leave", nil)
 	must(t, st, body, 200, "You left team-red")
 
-	// adopt an existing group; protected groups are refused
+	// adopt an existing group; SAM's role groups are refused
 	mod.get("/mod/groups?q=staff")
 	st, body = mod.post("/mod/groups/adopt", url.Values{"name": {"staff"}, "owner": {"carol"}})
 	must(t, st, body, 200, "staff is now managed here")
 	st, body = mod.post("/mod/groups/adopt", url.Values{"name": {"sam-admins"}})
-	must(t, st, body, 200, "protected")
+	must(t, st, body, 200, "role groups")
 	st, _ = mod.get("/groups/sam-admins")
 	if st != 404 {
-		t.Fatalf("protected group reachable: %d", st)
+		t.Fatalf("role group reachable: %d", st)
 	}
 	st, body = mod.post("/groups/team-red/delete", url.Values{"confirm": {"team-red"}})
 	must(t, st, body, 200, "deleted")
 	if _, err := h.dir.GetGroup(ctx, "team-red"); err == nil {
 		t.Fatal("group not deleted")
+	}
+}
+
+// With ldap_fas_groups, only FAS groups can be adopted, created groups are FAS, and removing FAS takes a group out.
+func TestFASGroupsOnly(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	if err := h.settings.Set(ctx, "ldap_fas_groups", "true", "test"); err != nil {
+		t.Fatal(err)
+	}
+	h.dir.fasOnly = true
+	h.dir.addUser("dave", "dave@example.test", "dave-password-123", "devs")
+	h.dir.setFAS("devs", true)
+
+	mod := h.browser()
+	mod.login("mod", "mod@example.test")
+	_, body := mod.get("/mod/groups?q=s")
+	if !strings.Contains(body, "devs") || strings.Contains(body, ">staff<") {
+		t.Fatalf("search should list FAS groups only:\n%s", body)
+	}
+	st, body := mod.post("/mod/groups/adopt", url.Values{"name": {"staff"}})
+	must(t, st, body, 200, "staff is not a FAS group")
+	if _, err := h.st.GetManagedGroup(ctx, "staff"); err == nil {
+		t.Fatal("non-FAS group adopted")
+	}
+	st, body = mod.post("/mod/groups/adopt", url.Values{"name": {"devs"}, "owner": {"dave"}})
+	must(t, st, body, 200, "devs is now managed here")
+
+	dave := h.browser()
+	dave.login("dave", "dave@example.test")
+	st, body = dave.get("/groups/devs")
+	must(t, st, body, 200, "devs")
+
+	// a group created from a request is a FAS group
+	dave.get("/groups/new")
+	st, body = dave.post("/groups/new", url.Values{"name": {"ops"}, "description": {"ops"}, "justification": {"need"}})
+	must(t, st, body, 200, "sent to the moderators")
+	reqs, _ := h.st.ListGroupRequests(ctx, store.StatusPending, "", 10)
+	st, body = mod.post("/mod/group-requests/"+reqs[0].ID, url.Values{"decision": {"approve"}})
+	must(t, st, body, 200, "Group ops created")
+	if g, _ := h.dir.GetGroup(ctx, "ops"); g == nil || !g.FAS {
+		t.Fatal("created group is not a FAS group")
+	}
+
+	// removing FAS in IPA takes the group out of SAM, though it stays registered
+	h.dir.setFAS("devs", false)
+	st, _ = dave.get("/groups/devs")
+	if st != 404 {
+		t.Fatalf("non-FAS group still manageable: %d", st)
+	}
+	st, _ = dave.post("/groups/devs/members", url.Values{"action": {"add"}, "username": {"bob"}})
+	if st != 404 {
+		t.Fatalf("non-FAS group still writable: %d", st)
+	}
+	if h.dir.isMember("devs", "bob") {
+		t.Fatal("bob added to a non-FAS group")
+	}
+	_, body = dave.get("/groups")
+	if strings.Contains(body, `href="/groups/devs"`) {
+		t.Fatalf("non-FAS group still listed:\n%s", body)
+	}
+	h.dir.setFAS("devs", true)
+	st, _ = dave.get("/groups/devs")
+	if st != 200 {
+		t.Fatalf("FAS restored but group unreachable: %d", st)
 	}
 }
 
