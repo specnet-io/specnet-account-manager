@@ -29,7 +29,8 @@ type fakeDir struct {
 	passwords map[string]string
 	expired   map[string]bool
 	groups    map[string]*directory.Group
-	fasOnly   bool // mimics directory.Config.FASGroups: search finds FAS groups only, new groups are FAS
+	cas       [][]byte // CACertificates (DER)
+	fasOnly   bool     // mimics directory.Config.FASGroups: search finds FAS groups only, new groups are FAS
 }
 
 func newFakeDir() *fakeDir {
@@ -58,6 +59,11 @@ func cp(u *directory.User) *directory.User {
 }
 
 func (f *fakeDir) Ping(context.Context) error { return nil }
+func (f *fakeDir) CACertificates(context.Context) ([][]byte, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.cas, nil
+}
 func (f *fakeDir) GetUser(_ context.Context, n string) (*directory.User, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()

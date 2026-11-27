@@ -32,7 +32,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	if se := sessionFrom(r); se != nil {
 		switch {
 		case se.HasRole(RoleUser):
-			http.Redirect(w, r, "/profile", http.StatusSeeOther)
+			http.Redirect(w, r, "/home", http.StatusSeeOther)
 		case se.HasRole(RoleAdmin):
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		}

@@ -246,7 +246,8 @@ var funcs = template.FuncMap{
 		}
 		return t.UTC().Format("2006-01-02 15:04 UTC")
 	},
-	"join": strings.Join,
+	"join":  strings.Join,
+	"lower": strings.ToLower,
 	"has": func(list []string, v string) bool {
 		for _, x := range list {
 			if strings.EqualFold(x, v) {
@@ -430,11 +431,16 @@ func (s *Server) moderatorEmails(ctx context.Context, dir directory.Directory) [
 	return s.emailsOf(ctx, dir, g.Members)
 }
 
-// reserved reports whether the name is one of SAM's own role groups. Owners of those could grant themselves
-// moderator or admin rights, so SAM never manages them, whatever else is configured.
+// reserved reports whether the name is one of SAM's own groups: the role groups (owners could grant themselves
+// moderator or admin rights) and the message-of-the-day group. SAM never manages them, whatever else is configured.
 func (s *Server) reserved(name string) bool {
 	n := strings.ToLower(name)
-	return n == strings.ToLower(s.settings.Get("moderator_group")) || n == strings.ToLower(s.settings.Get("admin_group"))
+	for _, k := range []string{"moderator_group", "admin_group", "home_motd_group"} {
+		if n == strings.ToLower(s.settings.Get(k)) {
+			return true
+		}
+	}
+	return false
 }
 
 // fasOnly reports whether SAM manages only FreeIPA FAS groups (ldap_fas_groups). See DETAILS.md §Directory.

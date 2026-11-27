@@ -1,0 +1,38 @@
+{{define "content"}}
+{{if or .Data.Motd (and .Data.MotdNote .IsAdmin)}}
+<section class="card motd">
+  <h2>message of the day</h2>
+  {{with .Data.Motd}}<p class="motd-text">{{.}}</p>{{else}}<p class="muted small">{{.Data.MotdNote}} (shown to administrators only)</p>{{end}}
+</section>
+{{end}}
+{{with .Data.Links}}
+<section class="card">
+  <h2>specnet platform</h2>
+  <ul class="links">
+  {{range .}}<li><a href="{{.URL}}" rel="noopener noreferrer">{{.Label}}</a>{{with .Description}} <span class="muted">- {{.}}</span>{{end}}</li>{{end}}
+  </ul>
+</section>
+{{end}}
+{{if .Data.CertsShown}}
+<section class="card">
+  <h2>ca certificates</h2>
+  {{if .Data.Certs}}
+  <p class="muted small">Install these to trust services signed by the platform CA. PEM format.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Certificate</th><th>Type</th><th>Expires</th><th>SHA-256</th></tr></thead>
+    <tbody>
+    {{range .Data.Certs}}
+      <tr><td><a href="/certs/{{.ID}}.crt" download="{{.File}}">{{.Name}}</a></td>
+      <td><span class="tag">{{if .Root}}root{{else}}intermediate{{end}}</span></td>
+      <td>{{when .NotAfter}}</td><td class="mono small">{{.Fingerprint}}</td></tr>
+    {{end}}
+    </tbody>
+  </table></div>
+  {{if gt (len .Data.Certs) 1}}<p><a class="button" href="/certs/ca-bundle.pem" download="ca-bundle.pem">download all (bundle)</a></p>{{end}}
+  {{else}}<p class="muted">No CA certificates are available.</p>{{end}}
+</section>
+{{end}}
+{{if not (or .Data.Motd (and .Data.MotdNote .IsAdmin) .Data.Links .Data.CertsShown)}}
+<section class="card"><p class="muted">Nothing here yet.</p></section>
+{{end}}
+{{end}}

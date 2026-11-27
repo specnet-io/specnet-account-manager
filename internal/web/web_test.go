@@ -5,8 +5,12 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"io"
 	"log/slog"
+	"math/big"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -214,7 +218,7 @@ func TestAccountRequestLifecycle(t *testing.T) {
 
 	mod := h.browser()
 	st, body = mod.login("mod", "mod@example.test")
-	must(t, st, body, 200, "Moderation")
+	must(t, st, body, 200, ">moderation<")
 	st, body = mod.get("/mod/accounts")
 	must(t, st, body, 200, "dave@example.test", "new hire")
 	reqs, _ := h.st.ListAccountRequests(context.Background(), store.StatusPending, 10)
@@ -283,7 +287,8 @@ func TestForgotPassword(t *testing.T) {
 func TestProfileAndEmailChange(t *testing.T) {
 	h := newHarness(t)
 	b := h.browser()
-	st, body := b.login("alice", "alice@example.test")
+	b.login("alice", "alice@example.test")
+	st, body := b.get("/profile")
 	must(t, st, body, 200, "Contact information", "gravatar.com/avatar/")
 	st, body = b.post("/profile", url.Values{"given_name": {"Alicia"}, "surname": {"Smith"}, "display_name": {"Alicia S"}, "email": {"alicia@example.test"}, "phone": {"+1 (555) 010-0000"}, "mobile": {""}, "title": {"Engineer"}})
 	must(t, st, body, 200, "We sent a link to alicia@example.test")
@@ -577,8 +582,8 @@ func TestAdminSettingsAndRoles(t *testing.T) {
 	}
 	root := h.browser()
 	st, body := root.login("root", "root@example.test")
-	must(t, st, body, 200, "Administration")
-	if strings.Contains(body, ">Moderation<") {
+	must(t, st, body, 200, ">administration<")
+	if strings.Contains(body, ">moderation<") {
 		t.Fatal("admin got moderator nav")
 	}
 	st, body = root.get("/admin")
@@ -699,5 +704,109 @@ func TestProxyClientIP(t *testing.T) {
 	s.cfg.TrustedProxies = mustPrefixes("10.0.0.0/8")
 	if ip := s.clientIP(r); ip != "203.0.113.9" {
 		t.Fatalf("trusted proxy: got %s", ip)
+	}
+}
+
+func testCA(t *testing.T, cn string, parent *x509.Certificate, parentKey *rsa.PrivateKey) (*x509.Certificate, *rsa.PrivateKey) {
+	t.Helper()
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
+	tpl := &x509.Certificate{SerialNumber: big.NewInt(time.Now().UnixNano()), Subject: pkix.Name{CommonName: cn},
+		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(24 * time.Hour), IsCA: true, BasicConstraintsValid: true,
+		KeyUsage: x509.KeyUsageCertSign}
+	if parent == nil {
+		parent, parentKey = tpl, key
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tpl, parent, &key.PublicKey, parentKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, _ := x509.ParseCertificate(der)
+	return c, key
+}
+
+// The signed-in landing page: MOTD from a directory group, admin-set links, CA downloads; each can be turned off.
+func TestHomePage(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	root, rootKey := testCA(t, "Specnet Root CA", nil, nil)
+	inter, _ := testCA(t, "Specnet Issuing CA", root, rootKey)
+	h.dir.cas = [][]byte{inter.Raw, root.Raw, root.Raw}
+	h.dir.addUser("motd-editor", "m@example.test", "pw-1234567890", "sam-motd")
+	h.dir.mu.Lock()
+	h.dir.groups["sam-motd"].Description = "Maintenance Friday 22:00 UTC.\n<b>not bold</b>"
+	h.dir.mu.Unlock()
+	if err := h.settings.Set(ctx, "home_links", "Wiki | https://wiki.example.test | docs\nSSO | https://auth.example.test", "test"); err != nil {
+		t.Fatal(err)
+	}
+
+	alice := h.browser()
+	st, body := alice.login("alice", "alice@example.test")
+	must(t, st, body, 200, "<title>home · specnet account manager</title>", `class="on">home</a>`, ">ssh keys<",
+		"Maintenance Friday 22:00 UTC.", "&lt;b&gt;not bold&lt;/b&gt;", `href="https://wiki.example.test"`, "docs", ">SSO<",
+		"Specnet Root CA", "Specnet Issuing CA", "root", "intermediate", "/certs/ca-bundle.pem")
+	if i, j := strings.Index(body, "Wiki"), strings.Index(body, "Specnet Root CA"); i > j || strings.Index(body, "Maintenance") > i {
+		t.Fatal("sections out of order: motd, links, certificates")
+	}
+	if strings.Count(body, "Specnet Root CA") != 1 {
+		t.Fatal("duplicate CA listed")
+	}
+	id := regexp.MustCompile(`/certs/([0-9a-f]{16})\.crt`).FindStringSubmatch(body)
+	if id == nil {
+		t.Fatal("no certificate link")
+	}
+	resp, err := alice.c.Get(h.base + "/certs/" + id[1] + ".crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if b, _ := pem.Decode(raw); b == nil || !strings.Contains(resp.Header.Get("Content-Disposition"), "Specnet-Root-CA.crt") {
+		t.Fatalf("download: %q %q", resp.Header.Get("Content-Disposition"), raw)
+	}
+	_, bundle := alice.get("/certs/ca-bundle.pem")
+	if strings.Count(bundle, "BEGIN CERTIFICATE") != 2 {
+		t.Fatalf("bundle: %s", bundle)
+	}
+	if st, _ := h.browser().get("/certs/ca-bundle.pem"); st == 200 {
+		t.Fatal("anonymous download") // the redirect to sign-in stops at the IdP
+	}
+
+	// the MOTD group can't be adopted
+	mod := h.browser()
+	mod.login("mod", "mod@example.test")
+	mod.get("/mod/groups")
+	st, body = mod.post("/mod/groups/adopt", url.Values{"name": {"sam-motd"}})
+	if strings.Contains(body, "now managed here") {
+		t.Fatal("motd group adopted")
+	}
+
+	// toggles
+	root2 := h.browser()
+	root2.login("root", "root@example.test")
+	root2.get("/admin")
+	st, body = root2.post("/admin/settings", url.Values{"section": {"Home page"}, "home_motd_group": {"sam-motd"}, "home_links": {"bad line"}})
+	must(t, st, body, 200, "Not saved")
+	root2.get("/admin")
+	st, body = root2.post("/admin/settings", url.Values{"section": {"Home page"}, "home_motd_group": {"sam-motd"}, "home_links": {""}})
+	must(t, st, body, 200, "Home page saved")
+	st, body = alice.get("/home")
+	must(t, st, body, 200)
+	for _, gone := range []string{"Maintenance", "Specnet Root CA", "wiki.example.test"} {
+		if strings.Contains(body, gone) {
+			t.Fatalf("%s still shown with its section off", gone)
+		}
+	}
+	if st, _ := alice.get("/certs/ca-bundle.pem"); st != 404 {
+		t.Fatalf("download while off: %d", st)
+	}
+
+	// a missing MOTD group is only mentioned to administrators
+	h.settings.Set(ctx, "home_motd_enabled", "true", "test")
+	h.settings.Set(ctx, "home_motd_group", "no-such-group", "test")
+	if _, body = alice.get("/home"); strings.Contains(body, "no-such-group") {
+		t.Fatal("motd note shown to a user")
+	}
+	if _, body = root2.get("/home"); !strings.Contains(body, "no-such-group not found") {
+		t.Fatal("motd note not shown to an admin")
 	}
 }

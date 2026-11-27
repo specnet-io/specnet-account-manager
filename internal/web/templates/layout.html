@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>{{.Title}} · {{.Site}}</title>
+<title>{{lower .Title}} · {{lower .Site}}</title>
 <link rel="stylesheet" href="/static/app.css">
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="/"><img src="/static/logo.svg" alt="specnet" width="144" height="36"><span class="path">{{.Site}}</span></a>
+  <a class="brand" href="/"><img src="/static/logo.svg" alt="specnet" width="144" height="36"><span class="path">{{lower .Site}}</span></a>
   {{with .Session}}
   <div class="who">
     {{with avatar .Email 64}}<img class="avatar sm" src="{{.}}" alt="" width="32" height="32">{{end}}
@@ -23,14 +23,15 @@
 {{if .Session}}
 <nav class="tabs">
   {{if .IsUser}}
-  <a href="/profile" {{if eq .Nav "profile"}}class="on"{{end}}>Profile</a>
-  <a href="/password" {{if eq .Nav "password"}}class="on"{{end}}>Password</a>
-  <a href="/keys" {{if eq .Nav "keys"}}class="on"{{end}}>SSH keys</a>
-  <a href="/groups" {{if eq .Nav "groups"}}class="on"{{end}}>Groups</a>
+  <a href="/home" {{if eq .Nav "home"}}class="on"{{end}}>home</a>
+  <a href="/profile" {{if eq .Nav "profile"}}class="on"{{end}}>profile</a>
+  <a href="/password" {{if eq .Nav "password"}}class="on"{{end}}>password</a>
+  <a href="/keys" {{if eq .Nav "keys"}}class="on"{{end}}>ssh keys</a>
+  <a href="/groups" {{if eq .Nav "groups"}}class="on"{{end}}>groups</a>
   {{end}}
-  {{if .IsMod}}<a href="/mod/accounts" {{if eq .Nav "mod"}}class="on"{{end}}>Moderation</a>{{end}}
-  {{if or .IsMod .IsAdmin}}<a href="/activity" {{if eq .Nav "activity"}}class="on"{{end}}>Activity</a>{{end}}
-  {{if .IsAdmin}}<a href="/admin" {{if eq .Nav "admin"}}class="on"{{end}}>Administration</a>{{end}}
+  {{if .IsMod}}<a href="/mod/accounts" {{if eq .Nav "mod"}}class="on"{{end}}>moderation</a>{{end}}
+  {{if or .IsMod .IsAdmin}}<a href="/activity" {{if eq .Nav "activity"}}class="on"{{end}}>activity</a>{{end}}
+  {{if .IsAdmin}}<a href="/admin" {{if eq .Nav "admin"}}class="on"{{end}}>administration</a>{{end}}
 </nav>
 {{end}}
 <main>
@@ -42,8 +43,8 @@
 </body>
 </html>{{end}}
 {{define "modtabs"}}<nav class="subtabs">
-<a href="/mod/accounts" {{if eq . "accounts"}}class="on"{{end}}>Account requests</a>
-<a href="/mod/group-requests" {{if eq . "greq"}}class="on"{{end}}>Group requests</a>
-<a href="/mod/groups" {{if eq . "groups"}}class="on"{{end}}>Groups</a>
-<a href="/mod/users" {{if eq . "users"}}class="on"{{end}}>Users</a>
+<a href="/mod/accounts" {{if eq . "accounts"}}class="on"{{end}}>account requests</a>
+<a href="/mod/group-requests" {{if eq . "greq"}}class="on"{{end}}>group requests</a>
+<a href="/mod/groups" {{if eq . "groups"}}class="on"{{end}}>groups</a>
+<a href="/mod/users" {{if eq . "users"}}class="on"{{end}}>users</a>
 </nav>{{end}}

@@ -48,7 +48,7 @@ type Def struct {
 func (d Def) EnvName() string { return "SAM_" + strings.ToUpper(d.Key) }
 
 // Sections in display order.
-var Sections = []string{"General", "Roles", "Sign-in (OIDC)", "Directory (LDAP)", "Notifications", "Profile"}
+var Sections = []string{"General", "Home page", "Roles", "Sign-in (OIDC)", "Directory (LDAP)", "Notifications", "Profile"}
 
 // Defs is the full registry.
 var Defs = []Def{
@@ -60,6 +60,11 @@ var Defs = []Def{
 	{Key: "password_min_length", Section: "General", Label: "Minimum password length", Help: "The directory's own policy still applies.", Kind: Int, Default: "12", Min: 8},
 	{Key: "session_hours", Section: "General", Label: "Session lifetime (hours)", Kind: Int, Default: "12", Min: 1},
 	{Key: "audit_retention_days", Section: "General", Label: "Keep activity log (days)", Help: "0 keeps it forever.", Kind: Int, Default: "365"},
+
+	{Key: "home_motd_enabled", Section: "Home page", Label: "Show the message of the day", Help: "The text is the description of the directory group below, read on every page view: on FreeIPA, edit it in the web UI or with ipa group-mod <group> --desc=... Empty or missing shows nothing.", Kind: Bool, Default: "true"},
+	{Key: "home_motd_group", Section: "Home page", Label: "Message of the day group", Help: "SAM never manages this group.", Kind: Text, Default: "sam-motd"},
+	{Key: "home_links", Section: "Home page", Label: "Platform links", Help: "One per line: label | https://url | optional description. Shown below the message of the day; empty hides the section.", Kind: TextArea},
+	{Key: "home_certs_enabled", Section: "Home page", Label: "Offer CA certificate downloads", Help: "FreeIPA: every trusted CA in the directory (root and intermediates), read live. Otherwise the CA certificate setting under Directory.", Kind: Bool, Default: "true"},
 
 	{Key: "moderator_group", Section: "Roles", Label: "Moderator group", Help: "Directory group whose members approve accounts and manage groups.", Kind: Text, Default: "sam-moderators"},
 	{Key: "admin_group", Section: "Roles", Label: "Administrator group", Help: "Directory group whose members manage these settings.", Kind: Text, Default: "sam-admins"},
@@ -342,6 +347,10 @@ func Validate(d Def, v string) error {
 				return err
 			}
 		}
+	case "home_links":
+		if _, err := ParseLinks(v); err != nil {
+			return err
+		}
 	case "editable_fields":
 		for _, f := range SplitList(v) {
 			if !validField[f] {
@@ -375,4 +384,36 @@ func checkPEM(v string) error {
 		return errors.New("no PEM certificate found")
 	}
 	return nil
+}
+
+// Link is one entry of home_links.
+type Link struct {
+	Label, URL, Description string
+}
+
+// ParseLinks parses home_links: one "label | url | description" per line, http(s) URLs only.
+func ParseLinks(v string) ([]Link, error) {
+	var out []Link
+	for i, line := range strings.Split(v, "\n") {
+		if line = strings.TrimSpace(line); line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "|", 3)
+		for j := range parts {
+			parts[j] = strings.TrimSpace(parts[j])
+		}
+		if len(parts) < 2 || parts[0] == "" {
+			return nil, fmt.Errorf("line %d: use label | https://url | optional description", i+1)
+		}
+		u, err := url.Parse(parts[1])
+		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+			return nil, fmt.Errorf("line %d: %q is not an http(s) URL", i+1, parts[1])
+		}
+		l := Link{Label: parts[0], URL: u.String()}
+		if len(parts) == 3 {
+			l.Description = parts[2]
+		}
+		out = append(out, l)
+	}
+	return out, nil
 }
