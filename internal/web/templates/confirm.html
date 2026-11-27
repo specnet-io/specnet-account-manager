@@ -1,0 +1,12 @@
+{{define "content"}}
+<section class="card narrow">
+  {{if eq .Data.Kind "verify"}}<h1>Confirm your email address</h1><p>Confirm this address to send your account request to the moderators.</p>
+  {{else if eq .Data.Kind "confirm_email"}}<h1>Confirm your new email address</h1><p>Your account's email address changes when you confirm.</p>
+  {{else}}<h1>One-time setup sign-in</h1><p>This signs you in as the setup administrator for one hour.</p>{{end}}
+  <form method="post" class="stack">
+    {{template "csrf" .CSRF}}
+    <input type="hidden" name="t" value="{{.Data.Token}}">
+    <button class="primary">Confirm</button>
+  </form>
+</section>
+{{end}}

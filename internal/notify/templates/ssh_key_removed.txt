@@ -1,0 +1,7 @@
+Subject: An SSH key was removed from your {{.Site}} account
+
+Hello {{.Name}},
+
+This SSH key was removed from "{{.Username}}":
+
+  {{.KeyType}} {{.Fingerprint}} {{.Comment}}

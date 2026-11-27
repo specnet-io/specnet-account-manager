@@ -1,0 +1,53 @@
+{{define "content"}}
+{{$g := .Data.Group}}{{$name := .Data.Name}}
+<section class="card">
+  <div class="head-row"><h1>{{$name}}</h1><a href="/groups">All groups</a></div>
+  {{if $g}}<p>{{or $g.Description "No description."}}</p>{{else}}<div class="flash err">This group no longer exists in the directory.</div>{{end}}
+  <p class="muted">Owners: {{if .Data.Managed.Owners}}{{join .Data.Managed.Owners ", "}}{{else}}none (moderators decide requests){{end}}</p>
+  {{if $g}}{{if .Data.IsMember}}
+    <form method="post" action="/groups/{{$name}}/leave" class="inline">{{template "csrf" .CSRF}}<button class="danger">Leave group</button></form>
+  {{else if .Data.Pending}}<p><span class="tag pending">Your request is waiting</span></p>
+  {{else}}
+    <form method="post" action="/groups/{{$name}}/join" class="stack">{{template "csrf" .CSRF}}
+      <label>Note to the owners (optional) <input name="note" maxlength="500"></label>
+      <button class="primary">Ask to join</button></form>
+  {{end}}{{end}}
+</section>
+{{if and .Data.CanManage $g}}
+<section class="card">
+  <h2>Members ({{len $g.Members}})</h2>
+  <table><tbody>
+  {{range $g.Members}}<tr><td>{{.}}</td><td class="right">
+    <form method="post" action="/groups/{{$name}}/members" class="inline">{{template "csrf" $.CSRF}}<input type="hidden" name="action" value="remove"><input type="hidden" name="username" value="{{.}}"><button class="danger small">Remove</button></form></td></tr>
+  {{else}}<tr><td class="muted">No members.</td></tr>{{end}}
+  </tbody></table>
+  <form method="post" action="/groups/{{$name}}/members" class="row-form">{{template "csrf" .CSRF}}
+    <input type="hidden" name="action" value="add"><input name="username" placeholder="username" required autocapitalize="none"><button>Add member</button></form>
+</section>
+{{if .Data.JoinRequests}}
+<section class="card">
+  <h2>Join requests</h2>
+  <table><tbody>
+  {{range .Data.JoinRequests}}<tr><td><strong>{{.Username}}</strong>{{with .Note}}<br><span class="muted small">{{.}}</span>{{end}}</td><td class="muted small">{{when .CreatedAt}}</td><td class="right">
+    <form method="post" action="/groups/{{$name}}/join-requests/{{.ID}}" class="inline">{{template "csrf" $.CSRF}}<button name="decision" value="approve" class="primary small">Approve</button> <button name="decision" value="deny" class="danger small">Deny</button></form></td></tr>{{end}}
+  </tbody></table>
+</section>
+{{end}}
+<section class="card">
+  <h2>Description</h2>
+  <form method="post" action="/groups/{{$name}}/description" class="row-form">{{template "csrf" .CSRF}}<input name="description" value="{{$g.Description}}" maxlength="256"><button>Save</button></form>
+</section>
+{{end}}
+{{if .Data.IsMod}}
+<section class="card mod">
+  <h2>Moderator controls</h2>
+  <form method="post" action="/groups/{{$name}}/owners" class="row-form">{{template "csrf" .CSRF}}
+    <select name="action"><option value="transfer">Transfer ownership to</option><option value="add">Add owner</option><option value="remove">Remove owner</option></select>
+    <input name="username" placeholder="username" required autocapitalize="none">
+    <button>Apply</button></form>
+  <form method="post" action="/groups/{{$name}}/release" class="row-form">{{template "csrf" .CSRF}}<button>Stop managing (keep the directory group)</button></form>
+  <form method="post" action="/groups/{{$name}}/delete" class="row-form">{{template "csrf" .CSRF}}
+    <input name="confirm" placeholder="type {{$name}} to confirm" required><button class="danger">Delete group from the directory</button></form>
+</section>
+{{end}}
+{{end}}

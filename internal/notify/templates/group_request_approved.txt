@@ -1,0 +1,6 @@
+Subject: Your group "{{.Group}}" was created
+
+Hello {{.Name}},
+
+Your request was approved: the group "{{.Group}}" now exists and you are its owner.
+Manage it at {{.Link}}

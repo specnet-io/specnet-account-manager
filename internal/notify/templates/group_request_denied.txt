@@ -1,0 +1,8 @@
+Subject: Your request for the group "{{.Group}}"
+
+Hello {{.Name}},
+
+Your request for the group "{{.Group}}" was not approved.{{if .Note}}
+
+Note from the moderator:
+{{.Note}}{{end}}

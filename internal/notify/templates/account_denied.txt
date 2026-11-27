@@ -1,0 +1,8 @@
+Subject: Your {{.Site}} account request
+
+Hello {{.Name}},
+
+Your request for the account "{{.Username}}" was not approved.{{if .Note}}
+
+Note from the moderator:
+{{.Note}}{{end}}

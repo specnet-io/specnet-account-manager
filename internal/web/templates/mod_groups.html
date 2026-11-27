@@ -1,0 +1,23 @@
+{{define "content"}}
+{{template "modtabs" "groups"}}
+<section class="card">
+  <h1>Managed groups</h1>
+  <div class="scroll"><table><thead><tr><th>Group</th><th>Owners</th><th>Added</th></tr></thead><tbody>
+  {{range .Data.Managed}}<tr><td><a href="/groups/{{.Name}}">{{.Name}}</a></td><td>{{join .Owners ", "}}</td><td class="small">{{when .CreatedAt}} by {{.CreatedBy}}</td></tr>
+  {{else}}<tr><td class="muted">None yet.</td></tr>{{end}}
+  </tbody></table></div>
+</section>
+<section class="card">
+  <h2>Manage an existing directory group</h2>
+  <form method="get" action="/mod/groups" class="row-form"><input name="q" value="{{.Data.Query}}" placeholder="search directory groups"><button>Search</button></form>
+  {{if .Data.Query}}
+  <table><tbody>
+  {{range .Data.Found}}<tr><td><strong>{{.Name}}</strong><br><span class="muted small">{{.Description}}</span></td><td class="right">
+    {{if .Managed}}<span class="muted small">managed or protected</span>{{else}}
+    <form method="post" action="/mod/groups/adopt" class="row-form">{{template "csrf" $.CSRF}}<input type="hidden" name="name" value="{{.Name}}"><input name="owner" placeholder="owner username (optional)" autocapitalize="none"><button>Manage</button></form>{{end}}
+  </td></tr>
+  {{else}}<tr><td class="muted">No matches.</td></tr>{{end}}
+  </tbody></table>
+  {{end}}
+</section>
+{{end}}

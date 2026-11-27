@@ -1,0 +1,13 @@
+{{define "content"}}
+{{template "modtabs" "users"}}
+<section class="card">
+  <h1>Users</h1>
+  <form method="get" action="/mod/users" class="row-form"><input name="q" value="{{.Data.Query}}" placeholder="username, name or email"><button>Search</button></form>
+  {{if .Data.Query}}
+  <div class="scroll"><table><tbody>
+  {{range .Data.Users}}<tr><td>{{with avatar .Email 48}}<img class="avatar sm" src="{{.}}" alt="" width="24" height="24">{{end}}</td><td><a href="/mod/users/{{.Username}}">{{.Username}}</a></td><td>{{.Name}}</td><td>{{.Email}}</td><td>{{if .Disabled}}<span class="tag denied">disabled</span>{{end}}</td></tr>
+  {{else}}<tr><td class="muted">No matches.</td></tr>{{end}}
+  </tbody></table></div>
+  {{end}}
+</section>
+{{end}}

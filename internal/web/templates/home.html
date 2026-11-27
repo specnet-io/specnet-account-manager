@@ -1,0 +1,11 @@
+{{define "content"}}
+<section class="card narrow hero">
+  <h1>{{.Site}}</h1>
+  <p>Manage your account, password, SSH keys and group memberships.</p>
+  {{if .Data.SSO}}<p><a class="button primary" href="/login">Sign in</a></p>{{else}}<p class="muted">Sign-in is not configured yet.</p>{{end}}
+  <ul class="links">
+    {{if .Requests}}<li><a href="/request-account">Request an account</a></li>{{end}}
+    <li><a href="/forgot-password">Forgot your password?</a></li>
+  </ul>
+</section>
+{{end}}

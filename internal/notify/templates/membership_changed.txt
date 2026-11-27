@@ -1,0 +1,5 @@
+Subject: Your membership of {{.Group}} changed
+
+Hello {{.Name}},
+
+{{.By}} {{if .Added}}added you to{{else}}removed you from{{end}} the group "{{.Group}}".

@@ -1,0 +1,10 @@
+Subject: New group request: {{.Group}}
+
+{{.Requester}} asked for a new group "{{.Group}}".
+
+Description: {{.Description}}
+
+Reason given:
+{{.Justification}}
+
+Review it here: {{.Link}}

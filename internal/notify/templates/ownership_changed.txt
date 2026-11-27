@@ -1,0 +1,5 @@
+Subject: Ownership of {{.Group}} changed
+
+Hello,
+
+{{.By}} changed the owners of the group "{{.Group}}". Owners now: {{.Owners}}.

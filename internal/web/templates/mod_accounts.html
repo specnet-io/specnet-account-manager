@@ -1,0 +1,22 @@
+{{define "content"}}
+{{template "modtabs" "accounts"}}
+<section class="card">
+  <h1>Pending account requests</h1>
+  {{range .Data.Pending}}
+  <div class="request">
+    <div><strong>{{.Username}}</strong> · {{.GivenName}} {{.Surname}} · {{.Email}} <span class="muted small">{{when .CreatedAt}}</span></div>
+    <blockquote>{{.Justification}}</blockquote>
+    <form method="post" action="/mod/accounts/{{.ID}}" class="row-form">{{template "csrf" $.CSRF}}
+      <input name="note" placeholder="Note to the requester (optional)" maxlength="1000">
+      <button name="decision" value="approve" class="primary">Approve</button>
+      <button name="decision" value="deny" class="danger">Deny</button></form>
+  </div>
+  {{else}}<p class="muted">Nothing waiting.</p>{{end}}
+</section>
+<section class="card">
+  <h2>Recent requests</h2>
+  <div class="scroll"><table><thead><tr><th>Username</th><th>Email</th><th>Status</th><th>By</th><th>Updated</th></tr></thead><tbody>
+  {{range .Data.Recent}}<tr><td>{{.Username}}</td><td>{{.Email}}</td><td><span class="tag {{.Status}}">{{.Status}}</span></td><td>{{.DecidedBy}}</td><td class="small">{{when .UpdatedAt}}</td></tr>{{end}}
+  </tbody></table></div>
+</section>
+{{end}}

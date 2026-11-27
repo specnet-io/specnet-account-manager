@@ -1,0 +1,35 @@
+{{define "content"}}
+<section class="card">
+  <div class="head-row"><h1>Groups</h1><a class="button" href="/groups/new">Request a new group</a></div>
+  <h2>Your memberships</h2>
+  {{if .Data.MemberOf}}
+  <ul class="chips">{{range .Data.MemberOf}}<li>{{if .Managed}}<a href="/groups/{{.Name}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}</li>{{end}}</ul>
+  {{else}}<p class="muted">You are not in any groups.</p>{{end}}
+</section>
+<section class="card">
+  <h2>Managed groups</h2>
+  {{if .Data.Browse}}
+  <div class="scroll"><table>
+    <thead><tr><th>Group</th><th>Owners</th><th>You</th></tr></thead>
+    <tbody>
+    {{range .Data.Browse}}
+      <tr><td><a href="/groups/{{.Name}}">{{.Name}}</a></td><td>{{join .Owners ", "}}</td>
+      <td>{{if .Owner}}<span class="tag">owner</span> {{end}}{{if .Member}}<span class="tag">member</span>{{else if .Pending}}<span class="tag pending">requested</span>{{end}}</td></tr>
+    {{end}}
+    </tbody>
+  </table></div>
+  {{else}}<p class="muted">No groups are managed here yet.</p>{{end}}
+</section>
+{{if or .Data.Joins .Data.GroupRequests}}
+<section class="card">
+  <h2>Your requests</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Request</th><th>Status</th><th>When</th></tr></thead>
+    <tbody>
+    {{range .Data.GroupRequests}}<tr><td>New group <strong>{{.Name}}</strong></td><td><span class="tag {{.Status}}">{{.Status}}</span>{{with .DecisionNote}} <span class="muted small">{{.}}</span>{{end}}</td><td class="small">{{when .CreatedAt}}</td></tr>{{end}}
+    {{range .Data.Joins}}<tr><td>Join <a href="/groups/{{.GroupName}}">{{.GroupName}}</a></td><td><span class="tag {{.Status}}">{{.Status}}</span></td><td class="small">{{when .CreatedAt}}</td></tr>{{end}}
+    </tbody>
+  </table></div>
+</section>
+{{end}}
+{{end}}

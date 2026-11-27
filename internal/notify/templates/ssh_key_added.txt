@@ -1,0 +1,9 @@
+Subject: An SSH key was added to your {{.Site}} account
+
+Hello {{.Name}},
+
+A new SSH key was added to "{{.Username}}":
+
+  {{.KeyType}} {{.Fingerprint}} {{.Comment}}
+
+If this was not you, remove it at {{.BaseURL}}/keys and change your password.

@@ -1,0 +1,29 @@
+{{define "content"}}
+{{$u := .Data.User}}
+<section class="card">
+  <div class="profile-head">
+    {{with avatar $u.Email 192}}<img class="avatar lg" src="{{.}}" alt="Profile image" width="96" height="96">{{end}}
+    <div>
+      <h1>{{$u.Name}}</h1>
+      <p class="muted">{{$u.Username}}{{with $u.Email}} · {{.}}{{end}}</p>
+      {{if .Data.Gravatar}}<p class="muted small">Your picture comes from <a href="https://gravatar.com" rel="noopener noreferrer" target="_blank">Gravatar</a>, based on your email address.</p>{{end}}
+    </div>
+  </div>
+</section>
+<section class="card">
+  <h2>Contact information</h2>
+  <form method="post" action="/profile" class="stack">
+    {{template "csrf" .CSRF}}
+    <div class="grid2">
+    {{range .Data.Fields}}
+      <label>{{.Label}}
+        {{if .Editable}}<input name="{{.Key}}" value="{{.Value}}" maxlength="128" {{if eq .Key "email"}}type="email"{{end}}>
+        {{else}}<input value="{{.Value}}" disabled>{{end}}
+      </label>
+    {{end}}
+    </div>
+    <p class="muted small">Changing your email address sends a confirmation link to the new address.</p>
+    <button class="primary">Save</button>
+  </form>
+</section>
+{{end}}
